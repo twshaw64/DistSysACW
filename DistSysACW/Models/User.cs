@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace DistSysACW.Models
 {
-    public enum Role { user, admin };
+    public enum Role { User, Admin };
     public class User
     {
         #region Task2
@@ -23,7 +23,7 @@ namespace DistSysACW.Models
             this.APIKey = APIKey;
             this.UserName = UserName;
             this.Role = Role;
-        }
+        }        
         #endregion
     }
 
@@ -37,9 +37,9 @@ namespace DistSysACW.Models
         //TODO: Make methods which allow us to read from/write to the database 
 
         //check user /User/New/ GET (APIKey)(return true/false)
-        public static bool UserCheck(UserContext context, string input) //test
+        public static bool UserCheck(UserContext context, string username)
         {
-            var result = context.Find<string>(input); //Find will return a value or null
+            var result = context.Users.Where(u => u.UserName == username).FirstOrDefault(); //Will either be a User or null
 
             if (result == null)
                 return false;
@@ -48,18 +48,20 @@ namespace DistSysACW.Models
         }
 
         //check user /User/New/ GET (APIKey, UserName)(return string(true/false))
-        public static bool UserCheckKN(UserContext context, string apiKey, string userName) //test
+        public static bool UserCheckKN(UserContext context, string apiKey, string username)
         {
-            var result = context.Users.Find(apiKey, userName); //Find will return either a User or null
+            var result = context.Users.Find(apiKey); //Will either be a User or null
 
-            if (result == null)
+            if (result == null) //if APIKey matched
                 return false;
-            else
+            else if(result.UserName == username) //if username matches
                 return true;
+            else
+                return false;
         }
 
         //check user /User/New/ GET (APIKey)(return User object)
-        public static User UserCheck_rObj(UserContext context, string apiKey) //test
+        public static User UserCheck_rObj(UserContext context, string apiKey)
         {
             var rUser = context.Users.Find(apiKey); //Find will return either a User or null
             return rUser;
@@ -93,24 +95,24 @@ namespace DistSysACW.Models
         #endregion
 
         //new user /User/New/ POST {generate GUID for APIKey store in DB}(return APIKey)
-        public static string UserAdd(UserContext context, string username) //test
+        public static string UserAdd(UserContext context, string username)
         {
             if (!UserCheck(context, username)) //if username isn't taken
             {
-                var apiKey = new Guid().ToString();
+                string apiKey = Guid.NewGuid().ToString();
                 Role r;
-                var count = context.Users.Count();
+                int count = context.Users.Count();
 
-                if (count < 1)//db is empty
+                if (count < 1)//if db is empty
                 {
-                    r = Role.admin;
+                    r = Role.Admin;
                 }
                 else
                 {
-                    r = Role.user;
+                    r = Role.User;
                 }
 
-                var tempUser = new User(username, apiKey, r);
+                User tempUser = new User(apiKey, username, r);
 
                 context.Users.Add(tempUser);
                 context.SaveChanges();
@@ -123,15 +125,17 @@ namespace DistSysACW.Models
             }
         }
 
+        //change user role /User/changerole/ POST (return null)
         public static bool UserChangeRole(UserContext context, string AdminApiKey, string username, Role role)
         {
             //var adminCheck = context.Users.Find(AdminApiKey);
             //if (adminCheck.Role != Role.admin) //if user is an admin
             //{
-                var rChange = context.Users.Find(username);
-                if (rChange != null)
+            var rChange = context.Users.Where(u => u.UserName == username).FirstOrDefault(); //Will either be a User or null
+            if (rChange != null)// && context.Users.Count() > 1) ?
                 {
                     rChange.Role = role; //change supplied user's role to supplied role
+                    context.SaveChanges();
                     return true;
                 }
                 return false;
@@ -143,17 +147,23 @@ namespace DistSysACW.Models
         }
 
         //delete user /User/RemoveUser/ DELETE (return null)
-        public static bool UserRemove(UserContext context, string apiKey, string username) //test
+        public static bool UserRemove(UserContext context, string apiKey, string username)
         {
-            var result = context.Users.Find(apiKey, username); //Find will return either a User or null
+            var result = context.Users.Find(apiKey); //Will either be a User or null
 
-            if (result != null)
+            if (result == null) //if APIKey matched
+                return false;
+            else if (result.UserName == username) //if username matches
             {
-                context.Users.Remove(result);
-                context.SaveChanges();
-                return true;
+                try
+                {
+                    context.Users.Remove(result);
+                    context.SaveChanges();
+                    return true;
+                }
+                catch { return false; } //delete failed
             }
-            else return false;
+            else return false; //user does not exist or does not correspond to apikey
         }
 
         #endregion

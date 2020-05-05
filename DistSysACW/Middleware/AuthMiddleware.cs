@@ -24,7 +24,8 @@ namespace DistSysACW.Middleware
             // TODO:  Find if a header ‘ApiKey’ exists, and if it does, check the database to determine if the given API Key is valid
             //        Then set the correct roles for the User, using claims
 
-            string apiKey = context.Request.Headers["ApiKey"].FirstOrDefault();
+            //string apiKey = context.Request.Headers["ApiKey"].FirstOrDefault(); //fix this statement (auth works, just need to grab apikey correctly)
+            string apiKey = context.Request.Headers.FirstOrDefault(a => a.Key == "ApiKey").Value.ToString();
 
             var currentUser = UserDatabaseAccess.UserCheck_rObj(dbContext, apiKey);
             if (currentUser != null) //if user exists

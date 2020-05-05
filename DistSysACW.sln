@@ -5,7 +5,7 @@ VisualStudioVersion = 16.0.29102.190
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "DistSysACW", "DistSysACW\DistSysACW.csproj", "{C7A0AEEF-A4D8-462B-90CC-BBBC0E31D2E7}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DistSysACWClient", "DistSysACWClient\DistSysACWClient.csproj", "{A48141B4-127C-447A-8067-01FE7B0FA6AA}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "DistSysACWClient", "DistSysACWClient\DistSysACWClient.csproj", "{A48141B4-127C-447A-8067-01FE7B0FA6AA}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

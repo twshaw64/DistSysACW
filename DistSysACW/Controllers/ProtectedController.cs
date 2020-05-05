@@ -4,54 +4,62 @@ using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Cryptography;
+using System.Net;
+using System.Net.Http;
+using System.Net.Http.Formatting;
+using Microsoft.AspNetCore.Authorization;
+using DistSysACW.Models;
 
 // For more information on enabling MVC for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
 
 namespace DistSysACW.Controllers
 {
-    public class ProtectedController : Controller
+    public class ProtectedController : BaseController
     {
-        [ActionName("Hello")]
-        public IActionResult GetHello(string username)
+        public ProtectedController(Models.UserContext context) : base(context) { }
+
+        [ActionName("Hello"), Authorize(Roles = "Admin,User")]
+        public IActionResult GetHello([FromHeader]string apiKey)
         {
-            return new OkObjectResult(new { message = "OK (200)", content = "Hello " + username });
+            User currentuser = UserDatabaseAccess.UserCheck_rObj(_context, apiKey);
+            return StatusCode(200, "Hello " + currentuser.UserName);
         }
 
-        [ActionName("SHA1")]
-        public IActionResult GetSHA1(string s)
+        [ActionName("SHA1"), Authorize(Roles = "Admin,User")]
+        public IActionResult GetSHA1([FromHeader]string apiKey, [FromQuery]string message)
         {
-            if (s != "")
+            if (message != "")
             {
-                byte[] asciiByteMessage = System.Text.Encoding.ASCII.GetBytes(s); //string > ascii byte array
+                byte[] asciiByteMessage = System.Text.Encoding.ASCII.GetBytes(message); //string > ascii byte array
 
                 SHA1 sha1Provider = new SHA1CryptoServiceProvider();
                 byte[] sha1ByteMessage = sha1Provider.ComputeHash(asciiByteMessage); //ascii > sha1
                 string hash = ByteArrayToHexString(sha1ByteMessage); //sha1 > hex string
 
-                return new OkObjectResult(new { message = "OK (200)", content = hash });
+                return StatusCode(200, hash);
             }
             else
             {
-                return new BadRequestObjectResult(new { message = "BAD REQUEST (400)", content = "No string submitted" });
+                return StatusCode(400, "No string submitted");
             }
         }
 
-        [ActionName("SHA256")]
-        public IActionResult GetSHA256(string s)
+        [ActionName("SHA256"), Authorize(Roles = "Admin,User")]
+        public IActionResult GetSHA256([FromHeader]string apiKey, [FromQuery]string message)
         {
-            if (s != "")
+            if (message != "")
             {
-                byte[] asciiByteMessage = System.Text.Encoding.ASCII.GetBytes(s); //string > ascii byte array
+                byte[] asciiByteMessage = System.Text.Encoding.ASCII.GetBytes(message); //string > ascii byte array
 
                 SHA256 sha256Provider = new SHA256CryptoServiceProvider();
                 byte[] sha1ByteMessage = sha256Provider.ComputeHash(asciiByteMessage); //ascii > sha1
                 string hash = ByteArrayToHexString(sha1ByteMessage); //sha1 > hex string
 
-                return new OkObjectResult(new { message = "OK (200)", content = hash });
+                return StatusCode(200, hash);
             }
             else
             {
-                return new BadRequestObjectResult(new { message = "BAD REQUEST (400)", content = "No string submitted" });
+                return StatusCode(400, "No string submitted");
             }
         }
 

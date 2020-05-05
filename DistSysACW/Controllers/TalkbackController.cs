@@ -20,12 +20,12 @@ namespace DistSysACW.Controllers
 
 
         [ActionName("Hello")]
-        public string GetHello()
+        public IActionResult GetHello()
         {
             #region TASK1
             // api/talkback/hello response
             #endregion
-            return new string("Hello World");
+            return StatusCode(200,"Hello World");
         }
 
         [ActionName("Sort")]
@@ -57,14 +57,11 @@ namespace DistSysACW.Controllers
                     sortResult += (integers[i] + " ");
                 }
 
-                var result = new OkObjectResult(new { message = "OK (200)", integers });
-
-                return result;
+                return StatusCode(200,sortResult);
             }
             catch
             {
-                var result = new BadRequestObjectResult(new { message = "BAD REQUEST (400)" });
-                return result;
+                return StatusCode(400, "BAD REQUEST");
             }
             #endregion
         }

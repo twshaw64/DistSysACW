@@ -29,15 +29,15 @@ namespace DistSysACW.Controllers
                 {
                     if (UserDatabaseAccess.UserCheck(_context, username))
                     {
-                        return new OkObjectResult(new { message = "OK (200)", content = "True - User Does Exist! Did you mean to do a POST to create a new user?" });
+                        return StatusCode(200,"True - User Does Exist! Did you mean to do a POST to create a new user?");
                     }
                 }
                 catch
                 {
-                    return new BadRequestObjectResult(new { message = "BAD REQUEST (400)", content = "Request formatted incorrectly. Submit a Username (string), API Key (int), or both" });
+                    return StatusCode(400, "Request formatted incorrectly. Submit a Username (string), API Key (int), or both");
                 }
             }
-            return new OkObjectResult(new { message = "OK (200)", content = "False - User Does Not Exist! Did you mean to do a POST to create a new user?" });
+            return StatusCode(200, "False - User Does Not Exist! Did you mean to do a POST to create a new user?");
         }
 
         //GET user/new/5
@@ -48,19 +48,19 @@ namespace DistSysACW.Controllers
             {
                 if (UserDatabaseAccess.UserCheck(_context, apiKey.ToString()))
                 {
-                    return new OkObjectResult(new { message = "OK (200)", content = "True - User Does Exist! Did you mean to do a POST to create a new user?" });
+                return StatusCode(200, "True - User Does Exist! Did you mean to do a POST to create a new user?");
                 }
             }
             catch
             {
-                return new BadRequestObjectResult(new { message = "BAD REQUEST (400)", content = "Request formatted incorrectly. Submit a Username (string), API Key (int), or both" });
+                //return StatusCode(400, "Request formatted incorrectly. Submit a Username (string), API Key (int), or both");  //doesn't fit spec, but is a better response
             }
-            return new OkObjectResult(new { message = "OK (200)", content = "False - User Does Not Exist! Did you mean to do a POST to create a new user?" });
+            return StatusCode(200, "False - User Does Not Exist! Did you mean to do a POST to create a new user?");
         }
 
         //GET user/new/'key','username'
         [HttpGet, ActionName("New")]
-        public IActionResult GetNewKN([FromQuery]string apiKey, string username)
+        public IActionResult GetNewKN([FromQuery]string apiKey, [FromQuery]string username)
         {
             if (apiKey != "")
             {
@@ -68,15 +68,15 @@ namespace DistSysACW.Controllers
                 {
                     if (UserDatabaseAccess.UserCheckKN(_context, apiKey, username))
                     {
-                        return new OkObjectResult(new { message = "OK (200)", content = "True - User Does Exist! Did you mean to do a POST to create a new user?" });
+                        return StatusCode(200, "True - User Does Exist! Did you mean to do a POST to create a new user?" );
                     }
                 }
                 catch
                 {
-                    return new BadRequestObjectResult(new { message = "BAD REQUEST (400)", content = "Request formatted incorrectly. Submit a Username (string), API Key (int), or both" });
+                    //return StatusCode(400, "Request formatted incorrectly. Submit a Username (string), API Key (int), or both");  //doesn't fit spec, but is a better response
                 }
             }
-            return new OkObjectResult(new { message = "OK (200)", content = "False - User Does Not Exist! Did you mean to do a POST to create a new user?" });
+            return StatusCode(200, "False - User Does Not Exist! Did you mean to do a POST to create a new user?" );
         }
 
         //POST user/new
@@ -91,60 +91,71 @@ namespace DistSysACW.Controllers
 
                     if (apiKey == null)
                     {
-                        return new UnauthorizedObjectResult(new { message = "FORBIDDEN (403)", content = "Oops. This username is already in use. Please try again with a new username." }); //check returns correct status code
+                        return StatusCode(403, "Oops. This username is already in use. Please try again with a new username.");
                     }
                     else
                     {
-                        return new OkObjectResult(new { message = "OK (200)", content = apiKey });
+                        return StatusCode(200, apiKey);
                     }
                 }
                 catch
                 {
-                    return new BadRequestObjectResult(new { message = "BAD REQUEST (400)", content = "Oops. Make sure your body contains a string with your username and your Content - Type is Content - Type:application / json" });
+                    return StatusCode(400, "Oops. Make sure your body contains a string with your username and your Content - Type is Content - Type:application / json");
                 }
             }
-            return new BadRequestObjectResult(new { message = "BAD REQUEST (400)", content = "Oops. Make sure your body contains a string with your username and your Content - Type is Content - Type:application / json" });
+            return StatusCode(400, "Oops. Make sure your body contains a string with your username and your Content - Type is Content - Type:application / json");
+        }
+
+        public class roleParams
+        {
+            public string UserName { get; set; }
+            public string Role { get; set; }
+            public roleParams(string username, string role)
+            {
+                this.UserName = username;
+                this.Role = role;
+            }
         }
 
         //POST user/ChangeRole
         [HttpPost, ActionName("ChangeRole"), Authorize(Roles = "Admin")]
-        public IActionResult PostChangeRole([FromQuery]string AdminApikey, [FromBody]string username, [FromBody] string role)
+        public IActionResult PostChangeRole([FromHeader]string Apikey, [FromBody]roleParams rp)
         {
             try
             {
-                if (Enum.TryParse(role, out Role r))
+                if (Enum.TryParse(rp.Role, out Role r))
                 {
-                    if (UserDatabaseAccess.UserChangeRole(_context, AdminApikey, username, r))
+                    if (UserDatabaseAccess.UserChangeRole(_context, Apikey, rp.UserName, r))
                     {
-                        return new OkObjectResult(new { message = "OK (200)", content = "Done" });
+                        return StatusCode(200, "DONE" );
                     }
                     else
                     {
-                        return new BadRequestObjectResult(new { message = "BAD REQUEST (400)", content = "NOT DONE: Username does not exist" });
+                        return StatusCode(400, "NOT DONE: Username does not exist");
                     }
                 }
                 else
                 {
-                    return new BadRequestObjectResult(new { message = "BAD REQUEST (400)", content = "NOT DONE: Role does not exist" });
+                    return StatusCode(400, "NOT DONE: Role does not exist");
                 }
             }
             catch
             {
-                return new BadRequestObjectResult(new { message = "BAD REQUEST (400)", content = "NOT DONE: An error occured" });
+                return StatusCode(400, "NOT DONE: An error occured");
             }
         }
 
         //DELETE user/removeuser
         [HttpDelete, ActionName("RemoveUser")]
-        public IActionResult DeleteRemoveUser([FromQuery]string apikey, [FromBody]string username)
+        public IActionResult DeleteRemoveUser([FromHeader]string ApiKey, [FromQuery]string username)
         {
-            if (UserDatabaseAccess.UserRemove(_context, apikey, username))
+            if (UserDatabaseAccess.UserRemove(_context, ApiKey, username))
             {
-                return new OkObjectResult(new { message = "OK (200)", content = "User deleted" });
+                return StatusCode(200, "User deleted");
             }
             else
             {
-                return new OkObjectResult(new { message = "OK (200)", content = "User not found" });
+                return StatusCode(200, "User not found");
             }                        
         }
     }
