@@ -82,7 +82,7 @@ namespace DistSysACWClient
         {
             client.DefaultRequestHeaders.Accept.Clear(); //clear base headers
             client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json")); //specify json response
-            client.BaseAddress = new Uri("http://localhost:5001/");
+            client.BaseAddress = new Uri("http://localhost:5001/"); //test server ("http://distsysacw.azurewebsites.net/7411156/")
             User currentUser = new User(null, null);
 
             string welcomeMessage = "Hello. What would you like to do?";
@@ -163,7 +163,7 @@ namespace DistSysACWClient
                                             {
                                             path = client.BaseAddress + "api/user/new?username=" + inputArr[2];
                                             var response = await GetStringAsync(path);
-                                            Console.WriteLine("\n" + response + "\n"); //format
+                                            Console.WriteLine("\n" + response + "\n");
                                             break;
                                             }
                                         case "post":
@@ -171,13 +171,13 @@ namespace DistSysACWClient
                                             path = client.BaseAddress + "api/user/new";
                                             var UserName = JsonConvert.SerializeObject(inputArr[2]);
                                             UserName = UserName.Trim('\"');
-                                            var body = new StringContent(UserName, UnicodeEncoding.UTF8, "application/json");
+                                            var body = new StringContent(UserName, UnicodeEncoding.UTF8, "application/json"); //format request body
                                             var response = await client.PostAsync(path, body);
                                             if (response.IsSuccessStatusCode)
                                             {
                                                 var json = await response.Content.ReadAsStringAsync();
                                                 json = json.Trim('\"');
-                                                currentUser.APIKey = json;
+                                                currentUser.APIKey = json; //store user details
                                                 currentUser.UserName = UserName;
                                                 Console.WriteLine(json);
                                             }
@@ -201,7 +201,7 @@ namespace DistSysACWClient
                                                 { Console.WriteLine("False"); }
                                                 else
                                                 { Console.WriteLine("True"); }
-                                                client.DefaultRequestHeaders.Remove("ApiKey");
+                                                client.DefaultRequestHeaders.Remove("ApiKey"); //remove APIKey from headers
                                             }
                                             else
                                             {
@@ -227,9 +227,9 @@ namespace DistSysACWClient
                                                 {
                                                     currentUser.APIKey = inputArr[3];
                                                     currentUser.UserName = inputArr[2];
-                                                    Console.WriteLine("Stored\n");
+                                                    Console.WriteLine("\nStored\n");
                                                 }
-                                                client.DefaultRequestHeaders.Remove("ApiKey");
+                                                client.DefaultRequestHeaders.Remove("ApiKey"); //remove APIKey from headers
                                             }
                                             else
                                             { Console.WriteLine("You need to do a User Post or User Set first"); }
@@ -239,7 +239,7 @@ namespace DistSysACWClient
                                             {
                                             currentUser.APIKey = inputArr[3];
                                             currentUser.UserName = inputArr[2];
-                                            Console.WriteLine("Stored\n");
+                                            Console.WriteLine("\nStored\n");
 
                                             break;
                                             }
@@ -256,23 +256,44 @@ namespace DistSysACWClient
                                     {
                                         case "hello":
                                             {
-                                            path = client.BaseAddress + "api/protected/hello";
-                                            var response = await GetStringAsync(path);
-                                            Console.WriteLine("\n" + response + "\n");
+                                            if (currentUser.APIKey != null)
+                                            {
+                                                path = client.BaseAddress + "api/protected/hello";
+                                                client.DefaultRequestHeaders.Add("ApiKey", currentUser.APIKey); //Adds APIKey to headers
+                                                var response = await GetStringAsync(path);
+                                                Console.WriteLine("\n" + response + "\n");
+
+                                                client.DefaultRequestHeaders.Remove("ApiKey"); //remove APIKey from headers
+                                            }
+                                            else { Console.WriteLine("You need to do a User Post or User Set first"); }
                                             break;
                                             }
                                         case "sha1":
                                             {
-                                            path = client.BaseAddress + "api/protected/sha1";
-                                            var response = await GetStringAsync(path);
-                                            Console.WriteLine("\n" + response + "\n");
+                                            if (currentUser.APIKey != null)
+                                            {
+                                                path = client.BaseAddress + "api/protected/sha1?message=" + inputArr[2];
+                                                client.DefaultRequestHeaders.Add("ApiKey", currentUser.APIKey); //Adds APIKey to headers
+                                                var response = await GetStringAsync(path);
+                                                Console.WriteLine("\n" + response + "\n");
+
+                                                client.DefaultRequestHeaders.Remove("ApiKey"); //remove APIKey from headers
+                                            }
+                                            else { Console.WriteLine("You need to do a User Post or User Set first"); }
                                             break;
                                         }
                                         case "sha256":
                                             {
-                                            path = client.BaseAddress + "api/protected/sha256";
-                                            var response = await GetStringAsync(path);
-                                            Console.WriteLine("\n" + response + "\n");
+                                            if (currentUser.APIKey != null)
+                                            {
+                                                path = client.BaseAddress + "api/protected/sha256?message=" + inputArr[2];
+                                                client.DefaultRequestHeaders.Add("ApiKey", currentUser.APIKey); //Adds APIKey to headers
+                                                var response = await GetStringAsync(path);
+                                                Console.WriteLine("\n" + response + "\n");
+
+                                                client.DefaultRequestHeaders.Remove("ApiKey"); //remove APIKey from headers 
+                                            }
+                                            else { Console.WriteLine("You need to do a User Post or User Set first"); }
                                             break;
                                         }
                                     }
@@ -290,11 +311,11 @@ namespace DistSysACWClient
                     catch (Exception e)
                     {
 
-                        Console.WriteLine("Error Output: " + e);
+                        Console.WriteLine("\nError Output: " + e + "\n");
                     }
                 }
             else
-            { Console.WriteLine("Invalid Input /n"); }
+            { Console.WriteLine("\nInvalid Input \n"); }
             #endregion
         }
 
