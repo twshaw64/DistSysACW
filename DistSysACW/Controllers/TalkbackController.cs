@@ -57,7 +57,7 @@ namespace DistSysACW.Controllers
                     sortResult += (integers[i] + " ");
                 }
 
-                return StatusCode(200,sortResult);
+                return StatusCode(200, sortResult);
             }
             catch
             {

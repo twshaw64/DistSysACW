@@ -20,7 +20,7 @@ namespace DistSysACW.Controllers
         public UserController(Models.UserContext context) : base(context) { }
 
         //GET user/new/
-        [HttpGet("{UserName}"), ActionName("New")]
+        [HttpGet, ActionName("New")]
         public IActionResult GetNewN([FromQuery]string username)
         {
             if (username != "")
@@ -40,44 +40,44 @@ namespace DistSysACW.Controllers
             return StatusCode(200, "False - User Does Not Exist! Did you mean to do a POST to create a new user?");
         }
 
-        //GET user/new/5
-        [HttpGet("{APIKey}"), ActionName("New")] //UNNECESSARY?
-        public IActionResult GetNewK([FromQuery]int apiKey)
-        {
-            try
-            {
-                if (UserDatabaseAccess.UserCheck(_context, apiKey.ToString()))
-                {
-                return StatusCode(200, "True - User Does Exist! Did you mean to do a POST to create a new user?");
-                }
-            }
-            catch
-            {
-                //return StatusCode(400, "Request formatted incorrectly. Submit a Username (string), API Key (int), or both");  //doesn't fit spec, but is a better response
-            }
-            return StatusCode(200, "False - User Does Not Exist! Did you mean to do a POST to create a new user?");
-        }
+        ////GET user/new/5
+        //[HttpGet, ActionName("New")] //UNNECESSARY?
+        //public IActionResult GetNewK([FromQuery]int apiKey)
+        //{
+        //    try
+        //    {
+        //        if (UserDatabaseAccess.UserCheck(_context, apiKey.ToString()))
+        //        {
+        //            return StatusCode(200, "True - User Does Exist! Did you mean to do a POST to create a new user?");
+        //        }
+        //    }
+        //    catch
+        //    {
+        //        //return StatusCode(400, "Request formatted incorrectly. Submit a Username (string), API Key (int), or both");  //doesn't fit spec, but is a better response
+        //    }
+        //    return StatusCode(200, "False - User Does Not Exist! Did you mean to do a POST to create a new user?");
+        //}
 
         //GET user/new/'key','username'
-        [HttpGet, ActionName("New")]
-        public IActionResult GetNewKN([FromQuery]string apiKey, [FromQuery]string username)
-        {
-            if (apiKey != "")
-            {
-                try
-                {
-                    if (UserDatabaseAccess.UserCheckKN(_context, apiKey, username))
-                    {
-                        return StatusCode(200, "True - User Does Exist! Did you mean to do a POST to create a new user?" );
-                    }
-                }
-                catch
-                {
-                    //return StatusCode(400, "Request formatted incorrectly. Submit a Username (string), API Key (int), or both");  //doesn't fit spec, but is a better response
-                }
-            }
-            return StatusCode(200, "False - User Does Not Exist! Did you mean to do a POST to create a new user?" );
-        }
+        //[HttpGet, ActionName("New")]
+        //public IActionResult GetNewKN([FromQuery]string apiKey, [FromQuery]string username)
+        //{
+        //    if (apiKey != "")
+        //    {
+        //        try
+        //        {
+        //            if (UserDatabaseAccess.UserCheckKN(_context, apiKey, username))
+        //            {
+        //                return StatusCode(200, "True - User Does Exist! Did you mean to do a POST to create a new user?");
+        //            }
+        //        }
+        //        catch
+        //        {
+        //            //return StatusCode(400, "Request formatted incorrectly. Submit a Username (string), API Key (int), or both");  //doesn't fit spec, but is a better response
+        //        }
+        //    }
+        //    return StatusCode(200, "False - User Does Not Exist! Did you mean to do a POST to create a new user?");
+        //}
 
         //POST user/new
         [HttpPost, ActionName("New")]

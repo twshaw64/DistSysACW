@@ -5,6 +5,7 @@ using System.Net;
 using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Security.Cryptography;
+using System.Text;
 using System.Threading.Tasks;
 using Newtonsoft.Json;
 
@@ -17,11 +18,18 @@ namespace DistSysACWClient
         public string APIKey { get; set; }
         public string UserName { get; set; }
         public Role Role { get; set; }
+
+        public User(string APIKey, string UserName)
+        {
+            this.APIKey = APIKey;
+            this.UserName = UserName;
+        }
     }
 
     class Client
     {
         static HttpClient client = new HttpClient();
+
         static void PrintUser(User user)
         {
             Console.WriteLine($"Name: {user.UserName}\tRole: " +
@@ -45,17 +53,38 @@ namespace DistSysACWClient
             if (response.IsSuccessStatusCode)
             {
                 string json = await response.Content.ReadAsStringAsync();
-                return(json);
+                json = json.Trim('\"');
+                return (json);
             }
             else
             {
                 string content = await response.Content.ReadAsStringAsync();
-                return($"Content: {content}");
-            }            
+                return (content);
+            }
+        }
+
+        static async Task<string> PostAsJsonAsync(string path, StringContent input)
+        {
+            HttpResponseMessage response = await client.PostAsync(path, input);
+            if (response.IsSuccessStatusCode)
+            {
+                string json = await response.Content.ReadAsStringAsync();
+                return (json);
+            }
+            else
+            {
+                string content = await response.Content.ReadAsStringAsync();
+                return (content);
+            }
         }
 
         static void Main(string[] args)
         {
+            client.DefaultRequestHeaders.Accept.Clear(); //clear base headers
+            client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json")); //specify json response
+            client.BaseAddress = new Uri("http://localhost:5001/");
+            User currentUser = new User(null, null);
+
             string welcomeMessage = "Hello. What would you like to do?";
             while (true)
             {
@@ -67,7 +96,7 @@ namespace DistSysACWClient
                 {
                     try
                     {
-                        RunAsync(input).GetAwaiter().GetResult();
+                        RunAsync(input, currentUser).GetAwaiter().GetResult();
                     }
                     catch(Exception e)
                     {
@@ -81,16 +110,12 @@ namespace DistSysACWClient
             }
         }
 
-        static async Task RunAsync(string input)
+        static async Task RunAsync(string input, User currentUser)
         {
+            string path = null;
             #region Input Handling
             if (!string.IsNullOrEmpty(input))
             {
-                    client.DefaultRequestHeaders.Accept.Clear(); //clear base headers
-                    client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json")); //specify json response
-                    client.BaseAddress = new Uri("http://localhost:5001/");
-                    string path = null;
-
                     try
                     {
                         string[] inputArr = input.Split(" "); //splits input string by space character
@@ -103,18 +128,26 @@ namespace DistSysACWClient
                                     {
                                         case "hello":
                                             {
-                                                path = client.BaseAddress + "api/talkback/hello";
-                                                var response = await GetStringAsync(path);
-                                                Console.WriteLine("\n" + response + "\n");
-                                                break;
+                                            path = client.BaseAddress + "api/talkback/hello";
+                                            var response = await GetStringAsync(path);
+                                            Console.WriteLine("\n" + response + "\n");
+                                            break;
                                             }
                                         case "sort":
                                             {
-                                                path = client.BaseAddress + "api/talkback/sort"; //fix output format
-                                                var response = await GetStringAsync(path);
-                                                Console.WriteLine("\n" + response + "\n");
+                                            path = client.BaseAddress + "api/talkback/sort?"; //fix output format
 
-                                                break;
+                                            string integers = inputArr[2].Trim('[', ']');                                            
+                                            var integersArr = integers.Split(',');
+                                            for (int i = 0; i < integersArr.Length; i++)
+                                            {
+                                                path += "integers=" + integersArr[i] + "&";
+                                            }
+                                            path = path.TrimEnd('&');
+                                            var response = await GetStringAsync(path);
+                                            Console.WriteLine("\n" + response + "\n");
+
+                                            break;
                                             }
                                     }
                                     break;
@@ -128,7 +161,7 @@ namespace DistSysACWClient
                                     {
                                         case "get":
                                             {
-                                            path = client.BaseAddress + "api/user/new";
+                                            path = client.BaseAddress + "api/user/new?username=" + inputArr[2];
                                             var response = await GetStringAsync(path);
                                             Console.WriteLine("\n" + response + "\n"); //format
                                             break;
@@ -136,35 +169,77 @@ namespace DistSysACWClient
                                         case "post":
                                             {
                                             path = client.BaseAddress + "api/user/new";
-                                            var response = await GetStringAsync(path);
-                                            Console.WriteLine("\n" + response + "\n"); //format
+                                            var UserName = JsonConvert.SerializeObject(inputArr[2]);
+                                            UserName = UserName.Trim('\"');
+                                            var body = new StringContent(UserName, UnicodeEncoding.UTF8, "application/json");
+                                            var response = await client.PostAsync(path, body);
+                                            if (response.IsSuccessStatusCode)
+                                            {
+                                                var json = await response.Content.ReadAsStringAsync();
+                                                json = json.Trim('\"');
+                                                currentUser.APIKey = json;
+                                                currentUser.UserName = UserName;
+                                                Console.WriteLine(json);
+                                            }
+                                            else
+                                            {
+                                                string content = await response.Content.ReadAsStringAsync();
+                                                Console.WriteLine(content);
+                                            }
                                             break;
                                             }
                                         case "delete":
                                             {
-                                            path = client.BaseAddress + "api/user/removeuser";
-                                            var response = await GetStringAsync(path);
-                                            Console.WriteLine("\n" + response + "\n"); //format
+                                            if (currentUser.APIKey != null)
+                                            {
+                                                path = client.BaseAddress + "api/user/removeuser?username=" + currentUser.UserName;
+                                                client.DefaultRequestHeaders.Add("ApiKey", currentUser.APIKey); //Adds APIKey to headers
+
+                                                var response = await client.DeleteAsync(path);
+                                                var json = await response.Content.ReadAsStringAsync();
+                                                if (json == "\"User not found\"")
+                                                { Console.WriteLine("False"); }
+                                                else
+                                                { Console.WriteLine("True"); }
+                                                client.DefaultRequestHeaders.Remove("ApiKey");
+                                            }
+                                            else
+                                            {
+                                                Console.WriteLine("You need to do a User Post or User Set first");
+                                            }
                                             break;
-                                        }
+                                            }
                                         case "role": //add store functionality if ok
                                             {
-                                            path = client.BaseAddress + "api/user/changerole";
-                                            var response = await GetStringAsync(path);
-                                            Console.WriteLine("\n" + response + "\n"); //format
-
-                                            if (response == "OK") //fix
+                                            if (currentUser.APIKey != null)
                                             {
-                                                Console.WriteLine("Stored");
+                                                path = client.BaseAddress + "api/user/changerole";
+                                                client.DefaultRequestHeaders.Add("ApiKey", currentUser.APIKey); //Adds APIKey to headers
+                                                string tempBody = "{\n\"username\" : \"" + inputArr[2] + "\",\n\"role\" : \"" + inputArr[3] + "\"\n}"; //formatting for json object
+
+                                                var body = new StringContent(tempBody, UnicodeEncoding.UTF8, "application/json"); //body formatting
+                                                var response = await client.PostAsync(path, body); //request
+
+                                                var json = await response.Content.ReadAsStringAsync(); //response parse
+                                                Console.WriteLine("\n" + json + "\n");
+
+                                                if (response.IsSuccessStatusCode) //if sucessful, store user details
+                                                {
+                                                    currentUser.APIKey = inputArr[3];
+                                                    currentUser.UserName = inputArr[2];
+                                                    Console.WriteLine("Stored\n");
+                                                }
+                                                client.DefaultRequestHeaders.Remove("ApiKey");
                                             }
-
-                                            //store details
-
+                                            else
+                                            { Console.WriteLine("You need to do a User Post or User Set first"); }
                                             break;
                                         }
                                         case "set": //client side only 'Store givenAPI Key and username as variables'
                                             {
-                                            //call store method
+                                            currentUser.APIKey = inputArr[3];
+                                            currentUser.UserName = inputArr[2];
+                                            Console.WriteLine("Stored\n");
 
                                             break;
                                             }
